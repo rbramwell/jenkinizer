@@ -1,0 +1,135 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <logRotator>
+    <daysToKeep>-1</daysToKeep>
+    <numToKeep>30</numToKeep>
+    <artifactDaysToKeep>-1</artifactDaysToKeep>
+    <artifactNumToKeep>30</artifactNumToKeep>
+  </logRotator>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>BUILD_ID</name>
+          <description></description>
+          <defaultValue>dontKillMe</defaultValue>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM">
+    <configVersion>1</configVersion>
+    <remoteRepositories>
+      <org.spearce.jgit.transport.RemoteConfig>
+        <string>origin</string>
+        <int>5</int>
+        <string>fetch</string>
+        <string>+refs/heads/*:refs/remotes/origin/*</string>
+        <string>receivepack</string>
+        <string>git-upload-pack</string>
+        <string>uploadpack</string>
+        <string>git-upload-pack</string>
+        <string>url</string>
+        <string>{{repo}}</string>
+        <string>tagopt</string>
+        <string></string>
+      </org.spearce.jgit.transport.RemoteConfig>
+    </remoteRepositories>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>{{job_branch}}</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <localBranch></localBranch>
+    <mergeOptions/>
+    <recursiveSubmodules>false</recursiveSubmodules>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <authorOrCommitter>false</authorOrCommitter>
+    <clean>true</clean>
+    <wipeOutWorkspace>false</wipeOutWorkspace>
+    <buildChooser class="hudson.plugins.git.util.DefaultBuildChooser"/>
+    <gitTool>Default</gitTool>
+    <submoduleCfg class="list"/>
+    <relativeTargetDir>myrepo</relativeTargetDir>
+    <excludedRegions></excludedRegions>
+    <excludedUsers></excludedUsers>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers class="vector">
+    <hudson.triggers.TimerTrigger>
+      <spec>{{build_periodically}}</spec>
+    </hudson.triggers.TimerTrigger>
+    {% if poll_scm %}
+    <hudson.triggers.SCMTrigger>
+      <spec>* * * * *</spec>
+    </hudson.triggers.SCMTrigger>
+     {% endif %}
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Ant>
+      <targets>
+clean
+setup
+smoke.tomcat
+build.war
+deploy.local
+start.tomcat.async
+clean.selenium
+run.selenium.seeddata
+</targets>
+      <antName>(Default)</antName>
+      <antOpts>-Xmx$ANT_MAX_MEM -XX:MaxPermSize=$ANT_PERM_GEN</antOpts>
+      <buildFile>my-repo/build.xml</buildFile>
+      <properties>
+tomcat.permgen=$TOMCAT_PERM_GEN
+tomcat.maxmem=$TOMCAT_MAX_MEM
+junit.permgen=$JUNIT_PERM_GEN
+junit.maxmem=$JUNIT_MAX_MEM
+selenium.test.browser=$SELENIUM_TEST_BROWSER
+use.saucelabs=$USE_SAUCELABS
+selenium.test.url=$SELENIUM_TEST_URL
+use.saucelabs.tunnel=$USE_SAUCELABS_TUNNEL
+user.extensions.ip=$TEST_APP_SERVER
+saucelabs.browser=$SAUCELABS_BROWSER
+saucelabs.os=$SAUCELABS_OS
+saucelabs.browser.version=$SAUCELABS_BROWSER_VERSION
+saucelabs.username=$SAUCELABS_USERNAME
+saucelabs.access.key=$SAUCELABS_ACCESS_KEY
+testng.xmx=$TESTNG_XMX
+      </properties>
+    </hudson.tasks.Ant>
+  </builders>
+  <publishers>
+    <hudson.tasks.test.AggregatedTestResultPublisher/>
+    <hudson.tasks.ArtifactArchiver>
+      <artifacts>my-repo.jar, my-repo/build2/test_reports/**/*, my-repo/build2/sauce/**/*,my-repoe/*.log*,my-repo/build2/reports/selenium/**,my-repo/build2/reports/selenium-json/**,</artifacts>
+      <latestOnly>true</latestOnly>
+    </hudson.tasks.ArtifactArchiver>
+    <hudson.tasks.Fingerprinter>
+      <targets></targets>
+      <recordBuildArtifacts>true</recordBuildArtifacts>
+    </hudson.tasks.Fingerprinter>
+    <hudson.tasks.BuildTrigger>
+      <childProjects>{{build_triggers}}</childProjects>
+      <threshold>
+        <name>SUCCESS</name>
+        <ordinal>0</ordinal>
+        <color>BLUE</color>
+      </threshold>
+    </hudson.tasks.BuildTrigger>
+
+    <hudson.tasks.Mailer>
+      <recipients>$EMAIL</recipients>
+      <dontNotifyEveryUnstableBuild>false</dontNotifyEveryUnstableBuild>
+      <sendToIndividuals>false</sendToIndividuals>
+    </hudson.tasks.Mailer>
+  </publishers>
+  <buildWrappers/>
+  <customWorkspace>$SELENIUM_SHARED_WORKSPACE</customWorkspace>
+</project>
